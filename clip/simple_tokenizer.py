@@ -76,6 +76,11 @@ class SimpleTokenizer(object):
         self.bpe_ranks = dict(zip(merges, range(len(merges))))
         self.cache = {'<|startoftext|>': '<|startoftext|>', '<|endoftext|>': '<|endoftext|>'}
         self.pat = re.compile(r"""<\|startoftext\|>|<\|endoftext\|>|'s|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+""", re.IGNORECASE)
+        # START Modification
+        self.pat2 = re.compile(r"""<\|startoftext\|>|<\|endoftext\|>|[\p{L}\p{N}]+[_][\p{L}]+|[\p{L}]+|[\p{N}]""", re.IGNORECASE)
+        self.pat3 = re.compile(r"""<\|startoftext\|>|<\|endoftext\|>|[\p{L}]+|[\p{N}]""", re.IGNORECASE)
+        self.patS = re.compile(r"""<\|startoftext\|>|<\|endoftext\|>""", re.IGNORECASE)
+        # END   Modification
 
     def bpe(self, token):
         if token in self.cache:
@@ -121,7 +126,31 @@ class SimpleTokenizer(object):
     def encode(self, text):
         bpe_tokens = []
         text = whitespace_clean(basic_clean(text)).lower()
-        for token in re.findall(self.pat, text):
+
+        # START Modification
+        #print(text)
+
+        # Strip common abbreviations
+        text = re.sub(r"""'s|'t|'re|'ve|'m|'ll|'d""", r"""""", text)
+        #print(text)
+
+        texts = re.findall(self.pat2, text)
+
+        for id, match in enumerate(texts):
+            if "_" in match and len(re.findall(self.patS, match)) < 1:
+                #print(match)
+                for index, text in enumerate(re.findall(self.pat3, match)):
+                    texts.insert(id + 1 + index, text)
+
+        print(texts)
+
+        for token in texts:
+
+        #for token in re.findall(self.pat2, text):
+
+        #for token in re.findall(self.pat, text):
+        # END   Modification
+
             token = ''.join(self.byte_encoder[b] for b in token.encode('utf-8'))
             bpe_tokens.extend(self.encoder[bpe_token] for bpe_token in self.bpe(token).split(' '))
         return bpe_tokens
